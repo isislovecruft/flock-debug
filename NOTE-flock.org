@@ -1,0 +1,20 @@
+
+# -*- coding: utf-8 ; mode: org -*-
+
+* functions
+** bulkCreate(self, indexedComponents, request, return_changed, xmlresponses)
+
+** bulkCreateResponse(component, newchildURL, newchild, changedData, code, error)
+
+ - use of t.i.defer.returnValue()
+ - wrapped around 8 layers of custom classes w/o error handling
+
+*** -> storeComponent(self, component, **kwargs)
+****    -> txdav.caldav.datastore.sql...setComponent(self, )
+*****        -> _setComponentInternal()       HIT
+                 elif internal_state != ComponentUpdateState.RAW
+******           -> fullValidation()          HIT
+ - only one element in component?
+    - we get here with one element in component and appear to hit _lockUID()
+******           -> _lockUID()                HIT
+*****        -> updateDatabase()              DOESN'T HIT

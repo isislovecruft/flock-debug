@@ -1,0 +1,241 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Client-side CalDAV batch creation.
+
+:authors: Isis Lovecruft <isis@patternsinthevoid.net>
+          Rhodey Orbits <rhodey@whispersystems.org>
+:copyright: (c) 2014 all above mentioned authors
+:license: WTFPL
+:version: 1.0.0
+"""
+
+from __future__ import print_function
+
+import datetime
+import hashlib
+import requests
+
+
+def doClientBatchCreate(url, username=None, password=None):
+    """Client-side CalDAV batch creation.
+
+    :param str url: the url
+    """
+    data01 = bytes("""\
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Example Corp.//CalDAV Client//EN
+BEGIN:VTIMEZONE
+LAST-MODIFIED:20040110T032845Z
+TZID:US/Eastern
+BEGIN:DAYLIGHT
+DTSTART:20000404T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=4
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:20001026T020000
+RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTART;TZID=US/Eastern:20101201T100000
+DURATION:PT1H
+SUMMARY:Event #1
+UID:event1@example.com
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=US/Eastern:20101202T100000
+DURATION:PT1H
+SUMMARY:Event #2
+UID:event2@example.com
+END:VEVENT
+END:VCALENDAR
+""")
+    # updating dates and stuff to pass validation for SQL
+    data02 = bytes("""\
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Example Corp.//CalDAV Client//EN
+BEGIN:VTIMEZONE
+LAST-MODIFIED:20141113T032845Z
+TZID:US/Pacific
+BEGIN:DAYLIGHT
+DTSTART:20000404T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=4
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:20001026T020000
+RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTART;TZID=US/Eastern:20101201T100000
+DURATION:PT1H
+SUMMARY:Event #1
+UID:event1@example.com
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=US/Eastern:20101202T100000
+DURATION:PT1H
+SUMMARY:Event #2
+UID:event2@example.com
+END:VEVENT
+END:VCALENDAR
+""")
+    # taken from twistedcaldav.test.data.PayDay.ics
+    # only one document
+    data03 = bytes("""\
+BEGIN:VCALENDAR
+CALSCALE:GREGORIAN
+PRODID:-//CALENDARSERVER.ORG//NONSGML Version 1//EN
+VERSION:2.0
+X-WR-CALNAME:PayDay
+BEGIN:VTIMEZONE
+LAST-MODIFIED:20040110T032845Z
+TZID:US/Eastern
+BEGIN:DAYLIGHT
+DTSTART:20000404T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=4
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:20001026T020000
+RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTAMP:20050211T173501Z
+DTSTART;VALUE=DATE:20040227
+RRULE:FREQ=MONTHLY;BYDAY=-1MO,-1TU,-1WE,-1TH,-1FR;BYSETPOS=-1
+SUMMARY:PAY DAY
+UID:DC3D0301C7790B38631F1FBB@ninevah.local
+END:VEVENT
+END:VCALENDAR
+""")
+
+    data04 = bytes("""\
+BEGIN:VCALENDAR
+CALSCALE:GREGORIAN
+PRODID:-//CALENDARSERVER.ORG//NONSGML Version 1//EN
+VERSION:2.0
+X-WR-CALNAME:PayDay
+BEGIN:VTIMEZONE
+LAST-MODIFIED:20040110T032845Z
+TZID:US/Eastern
+BEGIN:DAYLIGHT
+DTSTART:20000404T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=4
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:20001026T020000
+RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTAMP:20050211T173501Z
+DTSTART;VALUE=DATE:20040227
+RRULE:FREQ=MONTHLY;BYDAY=-1MO,-1TU,-1WE,-1TH,-1FR;BYSETPOS=-1
+SUMMARY:PAY DAY
+UID:DC3D0301C7790B38631F1FBB@ninevah.local
+END:VEVENT
+END:VCALENDAR
+    """) #% (hashlib.sha1(str(datetime.datetime.now().utcnow())).hexdigest().upper()))
+
+    # Adding another document to data03
+    data05 = bytes("""\
+BEGIN:VCALENDAR
+CALSCALE:GREGORIAN
+PRODID:-//CALENDARSERVER.ORG//NONSGML Version 1//EN
+VERSION:2.0
+X-WR-CALNAME:PayDay
+BEGIN:VTIMEZONE
+LAST-MODIFIED:20040110T032845Z
+TZID:US/Eastern
+BEGIN:DAYLIGHT
+DTSTART:20000404T020000
+RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=4
+TZNAME:EDT
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+END:DAYLIGHT
+BEGIN:STANDARD
+DTSTART:20001026T020000
+RRULE:FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10
+TZNAME:EST
+TZOFFSETFROM:-0400
+TZOFFSETTO:-0500
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTAMP:20050211T173501Z
+DTSTART;VALUE=DATE:20040227
+RRULE:FREQ=MONTHLY;BYDAY=-1MO,-1TU,-1WE,-1TH,-1FR;BYSETPOS=-1
+SUMMARY:PAY DAY
+UID:%s@ninevah.local
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20110211T173501Z
+DTSTART;VALUE=DATE:20050227
+RRULE:FREQ=MONTHLY;BYDAY=-1MO,-1TU,-1WE,-1TH,-1FR;BYSETPOS=-1
+SUMMARY:PAY DAY
+UID:%s@ninevah.local
+END:VEVENT
+END:VCALENDAR
+    """ % (hashlib.sha1(str(datetime.datetime.now().utcnow())).hexdigest().upper(),
+           hashlib.sha1(str(datetime.datetime.now().utcnow())+"foo").hexdigest().upper()))
+
+    data = data03
+    parsedURL = requests.utils.urlparse(url)
+    host = parsedURL.hostname
+    path = parsedURL.path
+    headers = {'Host': host,
+               'Content-Type': 'text/calendar;charset="utf-8"',
+               'Content-Length': len(data),
+               'X-MobileMe-DAV-Options': 'return-changed-data'}
+    auth = (username + "@V2", password,)
+
+    print("Sending POST request to %s\n" % host)
+    print("POST %s HTTP/1.1" % (path))
+    print("\n".join([str(k) + ":" + str(v) for k, v in headers.items()]))
+    print(data)
+    
+    response = requests.post(url, data=data, auth=auth,
+                             headers=headers, allow_redirects=True)
+
+    print("\nResponse Status: %s\n" % response.status_code)
+    print(response.content)
+
+    return response
+
+
+if __name__ == "__main__":
+    #url = "http://54.71.83.93:80"
+    username = "lolrobot00@flock"
+    password = "test"
+    url = "http://54.71.83.93/calendars/__uids__/" + username + "/calendar/"
+    
+    response = doClientBatchCreate(url, username, password)
